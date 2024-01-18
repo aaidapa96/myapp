@@ -1,36 +1,26 @@
-from flask import Flask, request, jsonify
+import ssl
+from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-CORS(app)
 
-# Replace 'your_connection_string' with your actual Azure SQL Database connection string
-app.config['SQLALCHEMY_DATABASE_URI'] = 'your_connection_string'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-db = SQLAlchemy(app)
-
-class Book(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    author = db.Column(db.String(100), nullable=False)
-    date = db.Column(db.String(20), nullable=False)
-    availability = db.Column(db.Boolean, default=False)
-
-@app.route('/api/add_book', methods=['POST'])
-def add_book():
+CORS(app, resources={r"/submit": {"origins": "*"}})
+@app.route('/submit', methods=['POST'])
+def submit():
     data = request.get_json()
-    new_book = Book(
-        name=data['name'],
-        author=data['author'],
-        date=data['date'],
-        availability=data['availability']
-    )
-    db.session.add(new_book)
-    db.session.commit()
-    return jsonify({'message': 'Book added successfully'}), 201
+
+    # Process the data (e.g., store it in a database)
+    # In this example, we'll just print it
+    print("Received data:", data)
+
+    # Send a response back to the frontend
+    return jsonify({"message": "Data received successfully"})
 
 if __name__ == '__main__':
-    db.create_all()
-    app.run(debug=True)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(certfile='cert.pem', keyfile='key.pem')
+    app.run(host='0.0.0.0',debug=True, port=3000,ssl_context=context)
